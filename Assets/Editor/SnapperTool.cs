@@ -12,7 +12,7 @@ public class SnapperTool : EditorWindow
 
     private const string k_UndoStringSnap = "Snap Objects";
 
-    [Range(1f, 6f)]
+    [Range(0f, 6f)]
     public float gridSize = 1f;
     [Range(4, 100)]
     public int angularDivisions = 24;

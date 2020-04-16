@@ -19,5 +19,15 @@ public static class ExtensionMethods
     {
         return Mathf.Round(f / size) * size;
     }
+
+    public static float AtLeast(this float f, float min)
+    {
+        return Mathf.Max(f, min);
+    }
+
+    public static int AtLeast(this int i, int min)
+    {
+        return Mathf.Max(i, min);
+    }
 }
 
