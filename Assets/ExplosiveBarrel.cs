@@ -54,7 +54,7 @@ public class ExplosiveBarrel : MonoBehaviour
 
     }
 
-    private void OnDrawGizmos()
+    private void OnDrawGizmosSelected()
     {
         if(m_BarrelType == null)
         {
