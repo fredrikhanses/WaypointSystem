@@ -1,5 +1,4 @@
-﻿using UnityEngine;
-using UnityEditor;
+﻿using UnityEditor;
 
 [CanEditMultipleObjects]
 [CustomEditor(typeof(BarrelType))]
@@ -27,6 +26,5 @@ public class BarrelTypeEditor : Editor
         {
             ExplosiveBarrelManager.UpdateBarrelsColors();
         }
-
     }
 }
