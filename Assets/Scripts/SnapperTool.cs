@@ -45,8 +45,8 @@ public class SnapperTool : EditorWindow
 
         Selection.selectionChanged += Repaint;
         SceneView.duringSceneGui += DuringSceneGUI;
-
     }
+
     private void OnDisable()
     {
         EditorPrefs.SetFloat("SNAPPER_TOOL_gridSize", gridSize);

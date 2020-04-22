@@ -8,11 +8,46 @@ public struct SpawnData
 {
     public Vector2 pointInDisc;
     public float randomAngleDegree;
+    public GameObject spawnPrefab;
 
-    public void SetRandomValues()
+    public void SetRandomValues(List<GameObject> prefabs)
     {
         pointInDisc = Random.insideUnitCircle;
         randomAngleDegree = Random.value * 360;
+        spawnPrefab = prefabs.Count == 0 ? null : prefabs[Random.Range(0, prefabs.Count)];
+    }
+}
+
+public class SpawnPoint
+{
+    public SpawnData spawnData;
+    public Vector3 position;
+    public Quaternion rotation;
+    public bool isValid = false;
+
+    public Vector3 up => rotation * Vector3.up;
+
+    public SpawnPoint(Vector3 position, Quaternion rotation, SpawnData spawnData)
+    {
+        this.spawnData = spawnData;
+        this.position = position;
+        this.rotation = rotation;
+
+        // check if this mesh can be placed/fit the current location
+        if (spawnData.spawnPrefab != null)
+        {
+            SpawnablePrefab spawnablePrefab = spawnData.spawnPrefab.GetComponent<SpawnablePrefab>();
+            if (spawnablePrefab == null)
+            {
+                isValid = true;
+            }
+            else
+            {
+                float height = spawnablePrefab.height;
+                Ray ray = new Ray(position, up);
+                isValid = Physics.Raycast(ray, height) == false;
+            }
+        }
     }
 }
 
@@ -35,7 +70,9 @@ public class GrimmCannon : EditorWindow
 
     SpawnData[] spawnDataPoints;
     GameObject[] prefabs;
-    GameObject spawnPrefab;
+    List<GameObject> spawnPrefabs = new List<GameObject>();
+    [SerializeField] bool[] prefabSelectionStates;
+    Material materialInvalid;
 
     private void OnEnable()
     {
@@ -45,15 +82,23 @@ public class GrimmCannon : EditorWindow
         GenerateRandomPoints();
         SceneView.duringSceneGui += DuringSceneGUI;
 
+        Shader shader = Shader.Find("Unlit/InvalidSpawn");
+        materialInvalid = new Material(shader);
+
         // load prefabs
         string[] guids = AssetDatabase.FindAssets("t:prefab", new[] { "Assets/Prefabs" });
         IEnumerable<string> paths = guids.Select(AssetDatabase.GUIDToAssetPath);
         prefabs = paths.Select(AssetDatabase.LoadAssetAtPath<GameObject>).ToArray();
+        if (prefabSelectionStates == null || prefabSelectionStates.Length != prefabs.Length)
+        {
+            prefabSelectionStates = new bool[prefabs.Length];
+        }
     }
 
     private void OnDisable()
     {
         SceneView.duringSceneGui -= DuringSceneGUI;
+        DestroyImmediate(materialInvalid);
     }
 
     private void GenerateRandomPoints()
@@ -61,7 +106,7 @@ public class GrimmCannon : EditorWindow
         spawnDataPoints = new SpawnData[spawnCount];
         for (int i = 0; i < spawnCount; i++)
         {
-            spawnDataPoints[i].SetRandomValues();
+            spawnDataPoints[i].SetRandomValues(spawnPrefabs);
         }
     }
     
@@ -87,27 +132,26 @@ public class GrimmCannon : EditorWindow
         }
     }
 
-    private void TrySpawnObjects(List<Pose> poses)
+    private void TrySpawnObjects(List<SpawnPoint> spawnPoints)
     {
-        if(spawnPrefab == null)
+        if(spawnPrefabs.Count == 0)
         {
             return;
         }
 
-        foreach (Pose pose in poses)
+        foreach (SpawnPoint spawnPoint in spawnPoints)
         {
+            if (spawnPoint.isValid == false)
+            {
+                continue;
+            }
             // spawn prefab
-            GameObject spawnedPrefab = (GameObject)PrefabUtility.InstantiatePrefab(spawnPrefab);
+            GameObject spawnedPrefab = (GameObject)PrefabUtility.InstantiatePrefab(spawnPoint.spawnData.spawnPrefab);
             Undo.RegisterCreatedObjectUndo(spawnedPrefab, "Spawn Objects");
-            spawnedPrefab.transform.position = pose.position;
-            spawnedPrefab.transform.rotation = pose.rotation;
+            spawnedPrefab.transform.position = spawnPoint.position;
+            spawnedPrefab.transform.rotation = spawnPoint.rotation;
         }
         GenerateRandomPoints(); // update points
-    }
-
-    private void DrawSphere(Vector3 position)
-    {
-        Handles.SphereHandleCap(-1, position, Quaternion.identity, 0.1f, EventType.Repaint);
     }
 
     bool TryRaycastFromCamera(Vector2 cameraUp, out Matrix4x4 tangentToWorld)
@@ -128,15 +172,29 @@ public class GrimmCannon : EditorWindow
 
     private void DuringSceneGUI(SceneView sceneView)
     {
+        // button on top of the scene view to select prefabs
         Handles.BeginGUI();
         Rect rectangle = new Rect(8f, 8f, 64f, 64f);
-        foreach (GameObject prefab in prefabs)
+        for (int i = 0; i < prefabs.Length; i++)
         {
+            GameObject prefab = prefabs[i];
             Texture icon = AssetPreview.GetAssetPreview(prefab);
-            if (GUI.Toggle(rectangle, spawnPrefab == prefab, new GUIContent(icon)))
+            EditorGUI.BeginChangeCheck();
+            prefabSelectionStates[i] = GUI.Toggle(rectangle, prefabSelectionStates[i], new GUIContent(icon));
+            if (EditorGUI.EndChangeCheck())
             {
-                spawnPrefab = prefab;
+                // update selection list
+                spawnPrefabs.Clear();
+                for (int j = 0; j < prefabs.Length; j++)
+                {
+                    if(prefabSelectionStates[j])
+                    {
+                        spawnPrefabs.Add(prefabs[j]);
+                    }  
+                }
+                GenerateRandomPoints();
             }
+            // spawnPrefabs = prefab
             rectangle.y += rectangle.height + 2;
         }
         Handles.EndGUI();
@@ -165,13 +223,14 @@ public class GrimmCannon : EditorWindow
         // if the cursor is pointing on valid ground
         if (TryRaycastFromCamera(cameraTransform.up, out Matrix4x4 tangentToWorld))
         {
-            // draw circle marker
-            DrawCircleRegion(tangentToWorld);
-
-            // draw all spawn positions and meshes
-            List<Pose> spawnPoses = GetSpawnPoses(tangentToWorld);
-            DrawSpawnPreviews(spawnPoses);
-
+            List<SpawnPoint> spawnPoses = GetSpawnPoses(tangentToWorld);
+            if (Event.current.type == EventType.Repaint)
+            {
+                // draw circle marker
+                DrawCircleRegion(tangentToWorld);
+                // draw all spawn positions and meshes
+                DrawSpawnPreviews(spawnPoses, sceneView.camera);
+            }
             // spawn on press
             if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Space)
             {
@@ -180,26 +239,28 @@ public class GrimmCannon : EditorWindow
         }
     }
 
-    private void DrawSpawnPreviews(List<Pose> spawnPoses)
+    private void DrawSpawnPreviews(List<SpawnPoint> spawnPoses, Camera camera)
     {
-        foreach (Pose pose in spawnPoses)
+        foreach (SpawnPoint spawnPoint in spawnPoses)
         {
-            if (spawnPrefab != null)
+            if (spawnPoint.spawnData.spawnPrefab != null)
             {
                 // draw preview of all meshes in the prefab
-                Matrix4x4 poseToWorld = Matrix4x4.TRS(pose.position, pose.rotation, Vector3.one);
-                DrawPrefab(spawnPrefab, poseToWorld);
+                Matrix4x4 poseToWorld = Matrix4x4.TRS(spawnPoint.position, spawnPoint.rotation, Vector3.one);
+                DrawPrefab(spawnPoint.spawnData.spawnPrefab, poseToWorld, camera, spawnPoint.isValid);
             }
             else
             {
                 // prefab missing, draw sphere and normal on surface instead
-                Handles.SphereHandleCap(-1, pose.position, Quaternion.identity, 0.1f, EventType.Repaint);
-                Handles.DrawAAPolyLine(pose.position, pose.position + pose.up);
+                Handles.color = Color.black;
+                Handles.SphereHandleCap(-1, spawnPoint.position, Quaternion.identity, 0.1f, EventType.Repaint);
+                Handles.DrawAAPolyLine(spawnPoint.position, spawnPoint.position + spawnPoint.up);
+                Handles.color = Color.white;
             }
         }
     }
 
-    static void DrawPrefab(GameObject prefab, Matrix4x4 poseToWorld)
+    private void DrawPrefab(GameObject prefab, Matrix4x4 poseToWorld, Camera camera, bool valid)
     {
         MeshFilter[] filters = prefab.GetComponentsInChildren<MeshFilter>();
         foreach (MeshFilter filter in filters)
@@ -207,15 +268,14 @@ public class GrimmCannon : EditorWindow
             Matrix4x4 childToPose = filter.transform.localToWorldMatrix;
             Matrix4x4 childToWorld = poseToWorld * childToPose;
             Mesh mesh = filter.sharedMesh;
-            Material material = filter.GetComponent<MeshRenderer>().sharedMaterial;
-            material.SetPass(0);
-            Graphics.DrawMeshNow(mesh, childToWorld);
+            Material material = valid ? filter.GetComponent<MeshRenderer>().sharedMaterial : materialInvalid;
+            Graphics.DrawMesh(mesh, childToWorld, material, 0, camera);
         }
     }
 
-    List<Pose> GetSpawnPoses(Matrix4x4 tangentToWorld)
+    private List<SpawnPoint> GetSpawnPoses(Matrix4x4 tangentToWorld)
     {
-        List<Pose> hitPoses = new List<Pose>();
+        List<SpawnPoint> hitPoses = new List<SpawnPoint>();
         foreach (SpawnData randomDataPoint in spawnDataPoints)
         {
             // create ray for this point
@@ -226,8 +286,8 @@ public class GrimmCannon : EditorWindow
                 // calculate rotation and assign to pose together with position
                 Quaternion randomRotation = Quaternion.Euler(0f, 0f, randomDataPoint.randomAngleDegree);
                 Quaternion rotation = Quaternion.LookRotation(pointHit.normal) * (randomRotation * Quaternion.Euler(90f, 0f, 0f));
-                Pose pose = new Pose(pointHit.point, rotation);
-                hitPoses.Add(pose);
+                SpawnPoint spawnPoint = new SpawnPoint(pointHit.point, rotation, randomDataPoint);
+                hitPoses.Add(spawnPoint);
             }
         }
         return hitPoses;
@@ -264,7 +324,7 @@ public class GrimmCannon : EditorWindow
                 ringPoints[i] = r.origin;
             }
         }
-        Handles.color = Color.magenta;
+        Handles.color = Color.black;
         Handles.DrawAAPolyLine(ringPoints);
         Handles.color = Color.white;
     }
