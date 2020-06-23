@@ -4,8 +4,6 @@ using UnityEngine;
 
 public class WaypointSystemEditor : EditorWindow
 {
-    [SerializeField] public Patroller patroller;
-
     [Header("Current Point")]
     public Vector3 m_PointCurrent = Vector3.zero;
     [Header("Temporary Points")]
@@ -15,19 +13,16 @@ public class WaypointSystemEditor : EditorWindow
     [Header("Waypoints")]
     public List<GameObject> m_Waypoints = new List<GameObject>();
 
-    public List<GameObject> Waypoints { get => m_Waypoints; }
-
     private SerializedObject m_SerializedObject;
     private SerializedProperty m_PropertyPointCurrent;
     private SerializedProperty m_PropertyPointsTemporary; 
     private SerializedProperty m_PropertyPointsConfirmed;
     private SerializedProperty m_PropertyWaypoints;
-    private int m_ToolbarInt = 0;
-    private string[] m_ToolbarStrings = new string[] { "Toolbar1", "Toolbar2", "Toolbar3" };
+    private GameObject m_Waypoint;
+    private string[] m_WaypointsAmount;
     private bool m_ShowPoints;
-    private bool m_Value;
     private float m_SliderValue = 5f;
-    private float m_SliderValueLeft = 0f;
+    private float m_SliderValueLeft = 1f;
     private float m_SliderValueRight = 10f;
 
     private const string k_Point = "m_PointCurrent";
@@ -35,10 +30,15 @@ public class WaypointSystemEditor : EditorWindow
     private const string k_PointsConfirmed = "m_PointsConfirmed";
     private const string k_Waypoints = "m_Waypoints";
     private const string k_WaypointSystem = "WaypointSystem";
-    private const string k_Toggle = "Toggle";
     private const string k_AddPoint = "AddPoint";
     private const string k_ConfirmPoint = "ConfirmPoint";
-    private const string k_ResetPoints = "ResetPoints";
+    private const string k_ClearPoints = "ClearPoints";
+    private const string k_Waypoint = "Waypoint";
+    private const string k_IncreaseWaypoints = "IncreaseWaypoints";
+    private const string k_FillWaypoints = "Fill With Only\nActive Waypoints";
+    private const string k_WaypointsAmount = "WaypointsAmount";
+    private const string k_Underlines = "_______________";
+    private const string k_NewLine = "\n";
 
     [MenuItem("Tools/WaypointSystem")]
     public static void OpenWaypointSystem()
@@ -55,6 +55,14 @@ public class WaypointSystemEditor : EditorWindow
         m_PropertyWaypoints = m_SerializedObject.FindProperty(k_Waypoints);
         Selection.selectionChanged += Repaint;
         SceneView.duringSceneGui += DuringSceneGUI;
+        m_Waypoint = Resources.Load<GameObject>(k_Waypoint);
+        m_WaypointsAmount = new string[] { k_WaypointsAmount + k_NewLine + m_SliderValueLeft.ToString() + k_Underlines + m_SliderValueRight.ToString() };
+        m_Waypoints.Clear();
+        foreach (PatrollerWaypoint waypoint in FindObjectsOfType<PatrollerWaypoint>())
+        {
+            m_Waypoints.Add(waypoint.gameObject);
+            m_Waypoints.Reverse();
+        } 
     }
 
     private void OnDisable()
@@ -94,68 +102,92 @@ public class WaypointSystemEditor : EditorWindow
             }
         }
         Handles.BeginGUI();
-        Rect rectangle = new Rect(8f, 8f, 256f, 64f);
-        m_ToolbarInt = GUI.Toolbar(rectangle, m_ToolbarInt, m_ToolbarStrings);
-        rectangle.position -= Vector2.down * 75;
-        rectangle.width *= 0.5f;
+        Rect rectangle = new Rect(8f, 8f, 128f, 32f);
         if(GUI.Button(rectangle, k_AddPoint))
         {
             m_PointsTemporary.Add(m_PropertyPointCurrent.vector3Value);
             m_ShowPoints = true;
+            SceneView.RepaintAll();
+            Repaint();
         }
-        rectangle.position -= Vector2.down * 75;
+        rectangle.position -= Vector2.down * 40;
         if (GUI.Button(rectangle, k_ConfirmPoint))
         { 
-            foreach (Vector3 point in m_PointsTemporary)
+            foreach (SerializedProperty propertyPoint in m_PropertyPointsTemporary)
             {
-                m_PointsConfirmed.Add(point);
+                m_PointsConfirmed.Add(propertyPoint.vector3Value);
                 bool found = false;
+                int i = 0;
                 foreach (GameObject waypoint in m_Waypoints)
                 {
                     if (!waypoint.activeSelf)
                     {
                         found = true;
-                        waypoint.transform.position = point;
+                        waypoint.transform.position = propertyPoint.vector3Value;
+                        waypoint.GetComponent<PatrollerWaypoint>().SetIndex(i);
                         waypoint.SetActive(true);
                         break;
                     }
+                    i++;
                 }
                 if (found == false)
                 {
-                    GameObject waypoint = Resources.Load<GameObject>("Waypoint");
-                    GameObject currentWaypoint = Instantiate(waypoint, point, Quaternion.identity);
+                    GameObject currentWaypoint = Instantiate(m_Waypoint, propertyPoint.vector3Value, Quaternion.identity);
+                    currentWaypoint.GetComponent<PatrollerWaypoint>().SetIndex(i);
                     m_Waypoints.Add(currentWaypoint);
                     currentWaypoint.SetActive(true);
                 }
             }
             m_PointsTemporary.Clear();
             m_ShowPoints = false;
+            SceneView.RepaintAll();
+            Repaint();
         }
-        rectangle.position -= Vector2.down * 75;
-        if (GUI.Button(rectangle, k_ResetPoints))
+        rectangle.position -= Vector2.down * 40;
+        if (GUI.Button(rectangle, k_ClearPoints))
         {
             m_PointsConfirmed.Clear();
+            m_PointsTemporary.Clear();
             foreach (GameObject waypoint in m_Waypoints)
             {
                 waypoint.SetActive(false);
             }
+            SceneView.RepaintAll();
+            Repaint();
         }
         rectangle.position -= Vector2.down * 75;
-        if (GUI.Button(rectangle, "IncreaseWaypoints"))
+        if (GUI.Button(rectangle, k_IncreaseWaypoints))
         {
-            GameObject waypoint = Resources.Load<GameObject>("Waypoint");
             for (int i = 0; i < m_SliderValue; i++)
             {
-                GameObject currentWaypoint = Instantiate(waypoint, Vector3.zero, Quaternion.identity);
+                GameObject currentWaypoint = Instantiate(m_Waypoint, Vector3.zero, Quaternion.identity);
                 m_Waypoints.Add(currentWaypoint);
                 currentWaypoint.SetActive(false);
             }
+            SceneView.RepaintAll();
+            Repaint();
         }
-        rectangle.position -= Vector2.down * 75;
+        rectangle.position -= Vector2.down * 35;
+        GUI.Toolbar(rectangle, 0, m_WaypointsAmount);
+        rectangle.position -= Vector2.down * 30;
         m_SliderValue = GUI.HorizontalSlider(rectangle, m_SliderValue, m_SliderValueLeft, m_SliderValueRight);
         rectangle.position -= Vector2.down * 75;
-        m_Value = GUI.Toggle(rectangle, m_Value, k_Toggle);
+        if (GUI.Button(rectangle, k_FillWaypoints))
+        {
+            m_Waypoints.Clear();
+            foreach (PatrollerWaypoint waypoint in FindObjectsOfType<PatrollerWaypoint>())
+            {
+                m_Waypoints.Add(waypoint.gameObject);
+                m_Waypoints.Reverse();
+            }
+            SceneView.RepaintAll();
+            Repaint();
+        }
         Handles.EndGUI();
-        m_SerializedObject.ApplyModifiedProperties();
+        if (m_SerializedObject.ApplyModifiedProperties())
+        {
+            SceneView.RepaintAll();
+            Repaint();
+        }
     }
 }

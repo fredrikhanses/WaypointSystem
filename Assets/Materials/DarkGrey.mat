@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Sun
+  m_Name: DarkGrey
   m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}
   m_ShaderKeywords: _EMISSION
   m_LightmapFlags: 2
@@ -73,5 +73,5 @@ Material:
     - _UVSec: 0
     - _ZWrite: 1
     m_Colors:
-    - _Color: {r: 1, g: 1, b: 0, a: 1}
-    - _EmissionColor: {r: 0.92549014, g: 1, b: 0, a: 1}
+    - _Color: {r: 0.2924528, g: 0.2717604, b: 0.2717604, a: 1}
+    - _EmissionColor: {r: 0.122641504, g: 0.11280704, b: 0.11280704, a: 1}
