@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -10,7 +9,9 @@ public class Patroller : MonoBehaviour
     [SerializeField, Range(0.01f, 1f)] private float m_DistancePrecision = 0.01f;
     [SerializeField, Range(0.001f, 0.01f)] private float m_RotationSpeed = 0.001f;
     [SerializeField, Range(1f, 10f)] private float m_RotationPrecision = 1f;
+    [SerializeField] private bool m_ShowWaypoints;
     [SerializeField] private Rigidbody m_Rigidbody;
+    [SerializeField] private WaypointSystem m_WaypointSystem;
 
     private bool m_Move;
     private bool m_Stop;
@@ -24,6 +25,10 @@ public class Patroller : MonoBehaviour
     private Quaternion m_DirectionRotation;
     private LinkedList<Vector3> m_Path;
     private LinkedList<Vector3> m_InitialPath;
+    private GameObject m_Waypoint;
+
+    private const string k_Waypoint = "Waypoint";
+    private const string k_Length = "Length";
 
     private void Awake()
     {
@@ -33,20 +38,32 @@ public class Patroller : MonoBehaviour
         {
             m_Rigidbody = GetComponent<Rigidbody>();
         }
+        if (m_ShowWaypoints)
+        {
+            m_Waypoint = Resources.Load<GameObject>(k_Waypoint);
+        }
     }
 
     private void Start()
     {
-        foreach (PatrollerWaypoint waypoint in FindObjectsOfType<PatrollerWaypoint>())
+        for (int i = 0; i < PlayerPrefs.GetInt(k_Length); i++)
         {
-            m_InitialPath.AddLast(waypoint.GetPosition());
+            Vector3 position = new Vector3(PlayerPrefs.GetFloat($"{i}x", 0.0f), PlayerPrefs.GetFloat($"{i}y", 0.0f), PlayerPrefs.GetFloat($"{i}z", 0.0f));
+            if (m_ShowWaypoints)
+            {
+                Instantiate(m_Waypoint, position, Quaternion.identity).GetComponent<PatrollerWaypoint>().SetIndex(i); ;
+            }
+            m_InitialPath.AddLast(position);
         }
-        m_InitialPath = new LinkedList<Vector3>(m_InitialPath.Reverse());
         StartMoving(m_InitialPath);
     }
 
     private void FixedUpdate()
     {
+        if (m_InitialPath.Count == 0)
+        {
+            Start();
+        }
         if (m_Move)
         {
             if (m_OldSpeed != m_Speed)

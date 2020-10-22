@@ -171,10 +171,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7607673553392127281}
+  - component: {fileID: 7607673553392127284}
   - component: {fileID: 7607673553392127280}
   - component: {fileID: 7607673553392127283}
   - component: {fileID: 7607673553392127285}
-  - component: {fileID: 7607673553392127284}
   - component: {fileID: 7607673553392127282}
   m_Layer: 0
   m_Name: Patroller
@@ -199,6 +199,25 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7607673553392127284
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7607673553392127287}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d2a940be4c10844d9934d5ae4d6d567, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Speed: 5
+  m_DistancePrecision: 0.01
+  m_RotationSpeed: 0.001
+  m_RotationPrecision: 1
+  m_ShowWaypoints: 1
+  m_Rigidbody: {fileID: 7607673553392127285}
+  m_WaypointSystem: {fileID: 0}
 --- !u!33 &7607673553392127280
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -262,23 +281,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
---- !u!114 &7607673553392127284
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7607673553392127287}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2d2a940be4c10844d9934d5ae4d6d567, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Speed: 5
-  m_DistancePrecision: 0.01
-  m_RotationSpeed: 0.001
-  m_RotationPrecision: 1
-  m_Rigidbody: {fileID: 7607673553392127285}
 --- !u!65 &7607673553392127282
 BoxCollider:
   m_ObjectHideFlags: 0

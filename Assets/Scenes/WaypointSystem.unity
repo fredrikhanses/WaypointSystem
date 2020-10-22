@@ -172,7 +172,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 52639262450deb24290f3bb4d3ccc374, type: 2}
+  - {fileID: 15303, guid: 0000000000000000f000000000000000, type: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -420,7 +420,17 @@ PrefabInstance:
     - target: {fileID: 7607673553392127284, guid: e8bdef878cf10f248910e76357a6caf2,
         type: 3}
       propertyPath: m_Speed
-      value: 20
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 7607673553392127284, guid: e8bdef878cf10f248910e76357a6caf2,
+        type: 3}
+      propertyPath: m_WaypointSystem
+      value: 
+      objectReference: {fileID: 2044288743}
+    - target: {fileID: 7607673553392127284, guid: e8bdef878cf10f248910e76357a6caf2,
+        type: 3}
+      propertyPath: m_ShowWaypoints
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7607673553392127287, guid: e8bdef878cf10f248910e76357a6caf2,
         type: 3}
