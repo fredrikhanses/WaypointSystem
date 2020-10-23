@@ -9,7 +9,7 @@ public class Patroller : MonoBehaviour
     [SerializeField, Range(0.01f, 1f)] private float m_DistancePrecision = 0.01f;
     [SerializeField, Range(0.001f, 0.01f)] private float m_RotationSpeed = 0.001f;
     [SerializeField, Range(1f, 10f)] private float m_RotationPrecision = 1f;
-    [SerializeField] private bool m_ShowWaypoints;
+    [SerializeField] private bool m_ShowWaypoints = true;
     [SerializeField] private Rigidbody m_Rigidbody;
     [SerializeField] private WaypointSystem m_WaypointSystem;
 
@@ -51,7 +51,10 @@ public class Patroller : MonoBehaviour
             Vector3 position = new Vector3(PlayerPrefs.GetFloat($"{i}x", 0.0f), PlayerPrefs.GetFloat($"{i}y", 0.0f), PlayerPrefs.GetFloat($"{i}z", 0.0f));
             if (m_ShowWaypoints)
             {
-                Instantiate(m_Waypoint, position, Quaternion.identity).GetComponent<PatrollerWaypoint>().SetIndex(i); ;
+                Color color = new Color(PlayerPrefs.GetFloat($"{i}r", 1.0f), PlayerPrefs.GetFloat($"{i}g", 1.0f), PlayerPrefs.GetFloat($"{i}b", 1.0f), PlayerPrefs.GetFloat($"{i}a", 1.0f));
+                PatrollerWaypoint patrollerWaypoint = Instantiate(m_Waypoint, position, Quaternion.identity).GetComponent<PatrollerWaypoint>();
+                patrollerWaypoint.SetIndex(i); 
+                patrollerWaypoint.SetColor(color);
             }
             m_InitialPath.AddLast(position);
         }

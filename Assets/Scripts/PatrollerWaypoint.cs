@@ -5,6 +5,7 @@ using UnityEngine;
 public class PatrollerWaypoint : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI m_TextMeshProUGUI;
+    [SerializeField] private MeshRenderer m_Meshrenderer;
 
     private string m_IndexString;
     private int m_IndexInt;
@@ -14,6 +15,11 @@ public class PatrollerWaypoint : MonoBehaviour
         m_IndexInt = index;
         m_IndexString = index.ToString();
         m_TextMeshProUGUI.text = m_IndexString;
+    }
+
+    public void SetColor(Color color)
+    {
+        m_Meshrenderer.material.color = color;
     }
 
     public int GetIndex()
